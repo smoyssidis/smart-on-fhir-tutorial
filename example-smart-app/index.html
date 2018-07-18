@@ -132,7 +132,7 @@
 			patientApi.fetchAll({type: 'Encounter'}).then(function(response) {
 				console.log(response);
 				response = response[0];
-				$("#demo-fin").html(response.identifier.value);
+				$("#demo-fin").html(response.identifier[0].value);
 
 			});
 			
