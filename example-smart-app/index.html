@@ -137,12 +137,16 @@
 				$("#demo-rfv").html(response.reason[0].text);
 			});
 
-			patientApi.fetchAll({type: 'Observation',query: {
-					    category: {
-					    	$or:["vital-signs"]
-					    }
-			}}
-					   ).then(function(response) {
+			patientApi.fetchAll(
+				{
+					type: 'Observation',
+					query: {
+						category: {
+							$or:["vital-signs"]
+						}
+					}
+				}
+			).then(function(response) {
 				console.log(response);
 			});
 		}
