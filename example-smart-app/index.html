@@ -108,10 +108,12 @@
 		return (isNaN(this.getTime()))?"Invalid Date":retVal;
 	};
 		
-	function ready(smart) {
+	FHIR.oauth2.ready(
+	function(smart) {
 		if (typeof smart.patient === "object") {
 			console.log(smart);
 			var patientApi = smart.patient.api;
+			var encntr_id = smart.tokenResponse.encounter;
 			
 			patientApi.fetchAll({type: 'Patient'}).then(function(response) {
 				console.log(response);
@@ -129,35 +131,34 @@
 				}
 			});
 			
-			patientApi.fetchAll({type: 'Encounter'}).then(function(response) {
+			smart.api.fetchAll({type: 'Encounter',query:{"_id":encntr_id}}).then(function(response){
 				console.log(response);
 				response = response[0];
-				$("#demo-fin").html(response.identifier[0].value);
-				$("#demo-loc").html(response.location[0].location.display);
-				$("#demo-rfv").html(response.reason[0].text);
-			});
-/*
-			patientApi.fetchAll(
-				{
-					type: 'Observation',
-					query: {
-						category: {
-							$or:["vital-signs"]
-						}
-					}
+				for (var i=response.identifier.length;i--;){
+					var idObj = response.identifier[i];
+					(idObj.system === "urn:oid:3.3.3.3.3.3") && $("#demo-fin").html(idObj.value);
 				}
-			).then(function(response) {
-				console.log(response);
+				for (var i=response.location.length;i--;){
+					var idObj = response.location[i];
+					$("#demo-loc").html(idObj.location.display);
+				}
+				//$("#demo-rfv").html();
 			});
 			
-*/
+			
+			patientApi.fetchAll({type: 'Observation',query:{
+				category:{
+					$or:["vital-signs"]
+				}
+			}}).then(function(response) {
+				console.log(response);
+			});
 		}
-	}
-	function notReady(response) {
+	},
+	function (response) {
 		if (window.location.href.indexOf('error') < 0) {
 			document.body.innerText = "Launch first.";
 		}
-	}
-	FHIR.oauth2.ready(ready, notReady);
+	});
 	</script>
 </html>
