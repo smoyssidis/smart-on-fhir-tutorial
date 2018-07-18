@@ -128,6 +128,11 @@
 					});
 				}
 			});
+			
+			patientApi.fetchAll({type: 'Encounter'}).then(function(response)) {
+				console.log(response);
+			});
+			
 		}
 	}
 	function notReady(response) {
