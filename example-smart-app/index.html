@@ -131,6 +131,9 @@
 			
 			patientApi.fetchAll({type: 'Encounter'}).then(function(response) {
 				console.log(response);
+				response = response[0];
+				$("#demo-fin").html(response[0].identifier[0].type[0].value);
+
 			});
 			
 		}
