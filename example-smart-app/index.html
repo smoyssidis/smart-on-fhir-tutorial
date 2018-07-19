@@ -107,13 +107,11 @@
 		var retVal = ret_str.replace(/%MM/,monStr).replace(/%M/,(this.getMonth()+1)).replace(/%dd/,dateStr).replace(/%d/,this.getDate()).replace(/%yyyy/,this.getFullYear()).replace(/%yy/,yearStr).replace(/%HH/,HourStr).replace(/%H/,this.getHours()).replace(/%hh/,hourStr).replace(/%h/,shortHours).replace(/%mm/,minuteStr).replace(/%m/,this.getMinutes()).replace(/%ss/,secStr).replace(/%s/,this.getSeconds()).replace(/%p/,amPM).replace(/%P/,amPM.toUpperCase()).replace(/%b/,SHORT_MONTH[this.getMonth()]).replace(/%B/,LONG_MONTH[this.getMonth()]).replace(/%F/,LONG_DAY[this.getDay()]).replace(/%f/,SHORT_DAY[this.getDay()]);
 		return (isNaN(this.getTime()))?"Invalid Date":retVal;
 	};
-		
-	FHIR.oauth2.ready(
-	function(smart) {
+	function ready(smart) {
 		if (typeof smart.patient === "object") {
 			console.log(smart);
 			var patientApi = smart.patient.api;
-			var encntr_id = smart.tokenResponse.encounter;
+			var encounterId = smart.encounter.id;
 			
 			patientApi.fetchAll({type: 'Patient'}).then(function(response) {
 				console.log(response);
@@ -131,34 +129,94 @@
 				}
 			});
 			
-			smart.api.fetchAll({type: 'Encounter',query:{"_id":encntr_id}}).then(function(response){
-				console.log(response);
+			smart.api.fetchAll({type: 'Encounter', query:{"_id":encounterId}}).then(function(response) {
 				response = response[0];
-				for (var i=response.identifier.length;i--;){
-					var idObj = response.identifier[i];
-					(idObj.system === "urn:oid:3.3.3.3.3.3") && $("#demo-fin").html(idObj.value);
+				console.log(response);
+				
+				if (response.identifier && response.identifier.length) {
+					response.identifier.forEach(function(obj,idx){
+						if (obj.system === "urn:oid:3.3.3.3.3.3") {
+							$("#demo-fin").html(obj.value);
+						}
+					});
 				}
-				for (var i=response.location.length;i--;){
-					var idObj = response.location[i];
-					$("#demo-loc").html(idObj.location.display);
-				}
-				//$("#demo-rfv").html();
+				$("#demo-loc").html((response.location && response.location.length)?response.location[0].location.display:"&nbsp;");
+				$("#demo-rfv").html((response.reason && response.reason.length)?response.reason[0].text:"&nbsp;");
 			});
 			
-			
-			patientApi.fetchAll({type: 'Observation',query:{
-				category:{
-					$or:["vital-signs"]
+			patientApi.fetchAll({type: 'MedicationStatement'}).then(function(response) {
+				var retString = "<table class='dataTable'>";
+				response.forEach(function(medObj,idx){
+					retString += "<tr><td>"+medObj.medicationCodeableConcept.text+"</td></tr>";
+				});
+				retString += "</table>";
+				$("#medStatementDiv").html(retString);
+			});
+			patientApi.fetchAll({type:'AllergyIntolerance',query:{status:'active'}}).then(function(response) {
+				var retString = "<table class='dataTable'>";
+				response.forEach(function(allObj,idx){
+					retString += 
+						"<tr>"+
+							"<td>"+allObj.substance.text+"</td>"+
+							"<td>"+allObj.status+"</td>"+
+						"</tr>";
+				});
+				retString += "</table>";
+				$("#allergyDiv").html(retString);
+			});
+			var lookbackDate = new Date();
+			lookbackDate.setMonth(lookbackDate.getMonth()-6);
+			var month = (lookbackDate.getMonth()+1 < 10)?"0"+(lookbackDate.getMonth()+1):lookbackDate.getMonth()+1;
+			var date = (lookbackDate.getDate() < 10)?"0"+lookbackDate.getDate():lookbackDate.getDate();
+			var curDateStr = "gt"+lookbackDate.getFullYear()+"-"+month+"-"+date;
+			patientApi.fetchAll({
+				type: 'Observation',
+				query: {
+					category: {
+						$or: ["laboratory","vital-signs"]
+					},
+					code: {
+						$or: ['http://loinc.org|29463-7', 'http://loinc.org|8302-2', 'http://loinc.org|8462-4',
+						'http://loinc.org|8480-6', 'http://loinc.org|2085-9',
+						'http://loinc.org|2089-1', 'http://loinc.org|55284-4']
+					}/*,
+					date: curDateStr*/
 				}
-			}}).then(function(response) {
-				console.log(response);
+			}).then(function(response) {
+				/*
+				document.getElementById("obvDiv").innerText = JSON.stringify(response);
+				return;
+				*/
+				function handleValueQuantity( qObj, dtTm, txt ) {
+					return "<tr>"+
+								"<td>"+txt+"</td>"+
+								"<td>"+qObj.value+" "+qObj.unit+"</td>"+
+								"<td>"+dtTm+"</td>"+
+							"</tr>";
+				}
+				var retString = "<table class='dataTable'>";
+				response.forEach(function(obvObj,idx){
+					if (typeof obvObj.valueQuantity === "object") {
+						retString += handleValueQuantity( obvObj.valueQuantity, obvObj.effectiveDateTime, obvObj.code.text );
+					}
+					else if (typeof obvObj.component === "object" && obvObj.component.length) {
+						obvObj.component.forEach(function(cObj,idx2) {
+							if (typeof cObj.valueQuantity === "object") {
+								retString += handleValueQuantity( cObj.valueQuantity, obvObj.effectiveDateTime, cObj.code.text );
+							}	
+						});
+					}
+				});
+				retString += "</table>";
+				$("#obvDiv").html(retString);
 			});
 		}
-	},
-	function (response) {
+	}
+	function notReady(response) {
 		if (window.location.href.indexOf('error') < 0) {
 			document.body.innerText = "Launch first.";
 		}
-	});
+	}
+	FHIR.oauth2.ready(ready, notReady);
 	</script>
 </html>
