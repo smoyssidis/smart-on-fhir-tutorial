@@ -129,7 +129,7 @@
 				}
 			});
 			
-			patientApi.fetchAll({type: 'Encounter', query:{"_id":encounterId}}).then(function(response) {
+			smart.api.search({type: 'Encounter', query:{"_id":encounterId}}).then(function(response) {
 				response = response[0];
 				console.log(response);
 				
