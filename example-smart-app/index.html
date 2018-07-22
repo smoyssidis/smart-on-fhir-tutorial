@@ -129,19 +129,9 @@
 				}
 			});
 			
-			smart.api.search({type: 'Encounter', query:{"_id":encounterId}}).then(function(response) {
+			patientApi.fetchAll({type: 'Encounter', query:{"_id":encounterId}}).then(function(response) {
 				response = response[0];
 				console.log(response);
-				
-				if (response.identifier && response.identifier.length) {
-					response.identifier.forEach(function(obj,idx){
-						if (obj.system === "urn:oid:3.3.3.3.3.3") {
-							document.getElementById("demo-fin").innerHTML = obj.value;
-						}
-					});
-				}
-				document.getElementById("demo-loc").innerHTML = (response.location && response.location.length)?response.location[0].location.display:"&nbsp;";
-				document.getElementById("demo-rfv").innerHTML = (response.reason)?response.reason:"&nbsp;";
 			});
 			
 			patientApi.fetchAll({type: 'MedicationStatement'}).then(function(response) {
