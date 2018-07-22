@@ -128,12 +128,11 @@
 					});
 				}
 			});
-			
+			/*
 			patientApi.fetchAll({type: 'Encounter', query:{"_id":encounterId}).then(function(response) {
-				response = response[0];
-				console.log(response);
-			});
 			
+			});
+			*/
 			patientApi.fetchAll({type: 'MedicationStatement'}).then(function(response) {
 				var retString = "<table class='dataTable'>";
 				response.forEach(function(medObj,idx){
